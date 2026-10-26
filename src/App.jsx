@@ -1,6 +1,6 @@
 import { Suspense, useMemo, useRef } from "react";
-import { Canvas, useLoader } from "@react-three/fiber";
-import { Environment, Stars } from "@react-three/drei";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { Environment } from "@react-three/drei";
 import {
   Box3,
   MeshStandardMaterial,
@@ -31,7 +31,8 @@ const katanaTextureUrls = [
 ];
 
 const startRotation = [0.45, 0.9, 0.7];
-const startPosition = [1.3, -0.35, -0.6];
+const startPosition = [2.8, -0.2, -0.6];
+const detailPosition = [-1.5, 1, -0.3];
 
 function Katana({ pageRef }) {
   const katanaRef = useRef(null);
@@ -67,7 +68,7 @@ function Katana({ pageRef }) {
       child.material = new MeshStandardMaterial({
         map: baseColor,
         metalness: 1.2,
-        roughness: 0.45,
+        roughness: 0.2,
         metalnessMap: metallicMap,
         roughnessMap,
         normalMap,
@@ -96,9 +97,9 @@ function Katana({ pageRef }) {
         .fromTo(
           sword.position,
           {
-            x: 4.5,
-            y: 1.5,
-            z: -5,
+            x: 43.2,
+            y: 10.5,
+            z: -100,
             opacity: 0,
           },
           {
@@ -141,25 +142,46 @@ function Katana({ pageRef }) {
         },
       });
 
-      // Stage 1: turn the blade toward the viewer.
+      // Stage 1: start on the left for the opening section.
       timeline
         .to(
           sword.rotation,
           {
-            y: Math.PI * 0.7,
-            z: -0.2,
+            x: 0.35,
+            y: Math.PI * 0.72,
+            z: -0.45,
             duration: 1,
           },
           0,
         )
-
-        // Stage 2: move the sword forward and enlarge it.
         .to(
           sword.position,
           {
-            x: 1.1,
-            y: 0.2,
-            z: 1.2,
+            x: startPosition[0],
+            y: startPosition[1],
+            z: startPosition[2],
+            duration: 0.7,
+          },
+          0,
+        )
+
+        // Stage 2: move across the scene as the detail section begins.
+        .to(
+          sword.rotation,
+          {
+            x: 0.5,
+            y: Math.PI * 1.25,
+            z: 0.6,
+            duration: 1,
+          },
+          1,
+        )
+        .to(
+          sword.position,
+          {
+            x: detailPosition[0],
+            y: detailPosition[1],
+            z: detailPosition[2],
             duration: 1,
           },
           1,
@@ -167,21 +189,21 @@ function Katana({ pageRef }) {
         .to(
           sword.scale,
           {
-            x: 1.45,
-            y: 1.45,
-            z: 1.45,
+            x: 1.1,
+            y: 1.1,
+            z: 1.1,
             duration: 1,
           },
           1,
         )
 
-        // Stage 3: rotate into a dramatic final pose.
+        // Stage 3: settle on the right for the final detail pose.
         .to(
           sword.rotation,
           {
-            x: 0.25,
-            y: Math.PI * 1.5,
-            z: 0.55,
+            x: 0.5,
+            y: Math.PI * 1.55,
+            z: 0.1,
             duration: 1,
           },
           2,
@@ -189,9 +211,9 @@ function Katana({ pageRef }) {
         .to(
           sword.position,
           {
-            x: 0,
-            y: -0.15,
-            z: 0,
+            x: detailPosition[0] + 4,
+            y: -0.1,
+            z: 0.25,
             duration: 1,
           },
           2,
@@ -207,20 +229,85 @@ function Katana({ pageRef }) {
   );
 }
 
+function AshParticles() {
+  const pointsRef = useRef(null);
+
+  const { positions, basePositions } = useMemo(() => {
+    const count = 500;
+    const positionsArray = new Float32Array(count * 3);
+    const baseArray = new Float32Array(count * 3);
+
+    for (let i = 0; i < count; i += 1) {
+      const i3 = i * 3;
+      const radius = 8 + Math.random() * 10;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+
+      const x = radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.cos(phi) * 0.9;
+      const z = radius * Math.sin(phi) * Math.sin(theta);
+
+      positionsArray[i3] = x;
+      positionsArray[i3 + 1] = y;
+      positionsArray[i3 + 2] = z;
+
+      baseArray[i3] = x;
+      baseArray[i3 + 1] = y;
+      baseArray[i3 + 2] = z;
+    }
+
+    return { positions: positionsArray, basePositions: baseArray };
+  }, []);
+
+  useFrame((state) => {
+    if (!pointsRef.current) return;
+
+    const { array } = pointsRef.current.geometry.attributes.position;
+    const time = state.clock.elapsedTime;
+
+    for (let i = 0; i < array.length; i += 3) {
+      const driftX = Math.sin(time * 0.9 + i * 0.18) * 0.12;
+      const driftY = Math.cos(time * 0.7 + i * 0.14) * 0.12;
+      const driftZ = Math.sin(time * 1.1 + i * 0.11) * 0.12;
+
+      array[i] = basePositions[i] + driftX;
+      array[i + 1] = basePositions[i + 1] + driftY;
+      array[i + 2] = basePositions[i + 2] + driftZ;
+    }
+
+    pointsRef.current.geometry.attributes.position.needsUpdate = true;
+    pointsRef.current.rotation.y += 0.012;
+    pointsRef.current.rotation.x = Math.sin(time * 0.25) * 0.15;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial
+        color="#f7f7f5"
+        size={0.08}
+        transparent
+        opacity={0.8}
+        depthWrite={false}
+      />
+    </points>
+  );
+}
+
 function Scene({ pageRef }) {
   return (
     <>
-      <color attach="background" args={["#05060b"]} />
-
       <ambientLight intensity={0.8} />
 
       <directionalLight position={[-4, 5, 5]} intensity={3} color="#dbeaff" />
 
       <pointLight position={[-3, 0, 2]} intensity={35} color="#348cff" />
 
-      <pointLight position={[3, 2, -2]} intensity={25} color="#8e54ff" />
+      <pointLight position={[3, 2, -2]} intensity={25} color="#95730d" />
 
-      <Stars radius={55} depth={35} count={1200} factor={2} fade speed={0.25} />
+      <AshParticles />
 
       <Suspense fallback={null}>
         <Katana pageRef={pageRef} />
@@ -239,7 +326,7 @@ export default function App() {
         <Canvas
           camera={{ position: [0, 0, 7], fov: 40 }}
           dpr={[1, 1.5]}
-          gl={{ antialias: true }}
+          gl={{ antialias: true, alpha: true }}
         >
           <Scene pageRef={pageRef} />
         </Canvas>

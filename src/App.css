@@ -2,8 +2,10 @@
   position: relative;
   min-height: 300vh;
   overflow: clip;
-  background: #05060b;
-  color: #f5f6fa;
+  background:
+    linear-gradient(rgba(3, 4, 7, 0.72), rgba(9, 9, 10, 0.8)),
+    url("/bg01.jpg") center center / cover no-repeat;
+  color: #f6f0e4;
 }
 
 .katana-canvas {
@@ -35,7 +37,7 @@
 }
 
 .katana-nav a {
-  color: #fff;
+  color: #f6f0e4;
   text-decoration: none;
   font-weight: 800;
 }
@@ -57,7 +59,7 @@
 }
 
 .katana-copy .eyebrow {
-  color: #8abaff;
+  color: #d6c18d;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 4px;
@@ -81,12 +83,12 @@
 }
 
 .katana-copy h1 span {
-  color: #83baff;
+  color: #efe4c8;
 }
 
 .katana-copy > p:not(.eyebrow) {
   max-width: 380px;
-  color: #a8b0c2;
+  color: #b6afa1;
   line-height: 1.9;
   font-size: 14px;
 }
@@ -95,7 +97,7 @@
   position: absolute;
   bottom: 38px;
   left: 8%;
-  color: #9ca7ba;
+  color: #d1c4a8;
   font-size: 9px;
   letter-spacing: 2px;
 }
@@ -117,16 +119,17 @@
   display: inline-block;
   margin-top: 22px;
   padding: 15px 20px;
-  border: 1px solid #6587b4;
-  color: white;
+  border: 1px solid #d6c18d;
+  color: #f8f1e2;
   text-decoration: none;
   font-size: 10px;
   letter-spacing: 2px;
   pointer-events: auto;
+  background: rgba(18, 18, 18, 0.18);
 }
 
 .katana-button:hover {
-  background: #152b49;
+  background: rgba(214, 193, 141, 0.12);
 }
 
 @media (max-width: 700px) {
