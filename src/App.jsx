@@ -3,6 +3,8 @@ import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import {
   Box3,
+  Group,
+  Matrix4,
   MeshStandardMaterial,
   SRGBColorSpace,
   TextureLoader,
@@ -30,54 +32,78 @@ const katanaTextureUrls = [
   katanaRoughnessUrl,
 ];
 
-const startRotation = [0.45, 0.9, 0.7];
-const startPosition = [2.8, -0.2, -0.6];
-const detailPosition = [-1.5, 1, -0.3];
+// The model is normalised so the blade points up (+y), the handle points down
+// and the flat of the blade faces the camera. In that frame rotation.z is the
+// on-screen angle of the sword: 0 = tip up, positive = tip leaning left.
+// Where the hands hold the grip; cuts pivot around this point.
+const GRIP_Y = -2;
 
 const prefersReducedMotion =
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// Position the sword by where its grip is instead of its centre, so swings
+// read as if a hand is holding it.
+function gripPose(grip, angle, scale, extra = {}) {
+  const reach = -GRIP_Y * scale;
+  return {
+    position: [
+      grip[0] - Math.sin(angle) * reach,
+      grip[1] + Math.cos(angle) * reach,
+      grip[2] ?? 0,
+    ],
+    rotation: [extra.tiltX ?? 0, extra.turnY ?? 0, angle],
+    scale,
+  };
+}
+
 // One timeline unit per section: each pose is reached as its section fills
 // the viewport. The strike (section 04) is choreographed inline below.
 const scrollPoses = [
-  // 00 — hero
+  // 00 — hero: diagonal on the right, opposite the headline
   {
-    position: startPosition,
-    rotation: [0.35, Math.PI * 0.72, -0.45],
-    scale: 1,
+    position: [2.5, -0.05, 0],
+    rotation: [0.12, -0.35, -0.42],
+    scale: 0.92,
   },
-  // 01 — the form
+  // 01 — the form: crossing the left half, turned to catch the light
   {
-    position: detailPosition,
-    rotation: [0.5, Math.PI * 1.25, 0.6],
-    scale: 1.1,
+    position: [-2.3, 0, 0.2],
+    rotation: [-0.15, Math.PI * 0.18, -0.95],
+    scale: 0.95,
   },
-  // 02 — anatomy: stand the blade upright beside the parts list
+  // 02 — anatomy: upright beside the parts list, tip at the top
   {
-    position: [2.4, 0.1, 0],
-    rotation: [0.15, Math.PI * 1.5, 1.35],
-    scale: 1.05,
+    position: [2.7, 0, -0.4],
+    rotation: [0, -0.2, 0.04],
+    scale: 0.82,
   },
   // 03 — the forge: a full spin through the fire light
   {
-    position: [-2.1, -0.1, 0.4],
-    rotation: [0.6, Math.PI * 3.5, 0.2],
-    scale: 1,
+    position: [-2.4, -0.1, 0],
+    rotation: [0.1, Math.PI * 2 - 0.1, 0.3],
+    scale: 0.85,
   },
-  // 05 — specifications: lay the blade across the top of the frame
+  // 05 — specifications: laid across the top of the frame, tip to the right
   {
-    position: [0.2, 1.7, -1.2],
-    rotation: [0.1, Math.PI * 4, -0.05],
-    scale: 1.15,
+    position: [0.1, 1.5, -0.6],
+    rotation: [0.25, Math.PI * 2, -Math.PI / 2 - 0.03],
+    scale: 1.05,
   },
-  // 06 — the detail
+  // 06 — the detail: back to a diagonal on the right
   {
-    position: [detailPosition[0] + 4, -0.1, 0.25],
-    rotation: [0.5, Math.PI * 4.55, 0.1],
-    scale: 1,
+    position: [2.4, 0.1, 0.3],
+    rotation: [0.1, Math.PI * 2 + 0.45, -0.55],
+    scale: 0.92,
   },
 ];
+
+// Section 04: raised high on the right, cut down and across to the lower left.
+const strikePoses = {
+  raised: gripPose([2.1, 0.3, 0.2], -0.45, 0.78, { turnY: Math.PI * 2 }),
+  through: gripPose([1.1, 0, 0.4], 1.1, 0.78, { turnY: Math.PI * 2 }),
+  finish: gripPose([0.6, -0.8, 0.4], 2.25, 0.78, { turnY: Math.PI * 2 }),
+};
 
 function poseTo(timeline, target, pose, at, duration = 1, ease = "none") {
   timeline
@@ -138,6 +164,18 @@ function Katana({ pageRef, strikeRef }) {
     clone.scale.setScalar(scale);
     clone.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
 
+    // The OBJ lies flat along -x (tip) / +x (handle); stand it up so the tip
+    // points up and the flat of the blade faces the camera.
+    const upright = new Group();
+    upright.add(clone);
+    upright.quaternion.setFromRotationMatrix(
+      new Matrix4().makeBasis(
+        new Vector3(0, -1, 0),
+        new Vector3(0, 0, 1),
+        new Vector3(-1, 0, 0),
+      ),
+    );
+
     clone.traverse((child) => {
       if (!child.isMesh) return;
 
@@ -160,7 +198,7 @@ function Katana({ pageRef, strikeRef }) {
       child.receiveShadow = true;
     });
 
-    return clone;
+    return upright;
   }, [obj, baseColor, heightMap, metallicMap, normalMap, roughnessMap]);
 
   useEffect(() => {
@@ -218,28 +256,10 @@ function Katana({ pageRef, strikeRef }) {
       poseTo(timeline, sword, scrollPoses[2], 1);
       poseTo(timeline, sword, scrollPoses[3], 2, 1, "power1.inOut");
 
-      // Section 04: the strike — wind up high, then cut down diagonally.
-      timeline
-        .to(
-          sword.position,
-          { x: 2.6, y: 1.9, z: 0.2, duration: 0.55, ease: "power2.out" },
-          3,
-        )
-        .to(
-          sword.rotation,
-          { x: 0.2, y: Math.PI * 3.5, z: 1.4, duration: 0.55, ease: "power2.out" },
-          3,
-        )
-        .to(
-          sword.position,
-          { x: -0.6, y: -1.4, z: 0.6, duration: 0.45, ease: "power4.in" },
-          3.55,
-        )
-        .to(
-          sword.rotation,
-          { x: 0.4, y: Math.PI * 3.6, z: -1.3, duration: 0.45, ease: "power4.in" },
-          3.55,
-        );
+      // Section 04: the strike — raise the blade, then cut from the grip.
+      poseTo(timeline, sword, strikePoses.raised, 3, 0.5, "power2.out");
+      poseTo(timeline, sword, strikePoses.through, 3.5, 0.25, "power4.in");
+      poseTo(timeline, sword, strikePoses.finish, 3.75, 0.25, "power2.out");
 
       // Sections 05–06: specifications → final detail.
       poseTo(timeline, sword, scrollPoses[4], 4);
@@ -293,7 +313,12 @@ function Katana({ pageRef, strikeRef }) {
   );
 
   return (
-    <group ref={scrollRef} position={startPosition} rotation={startRotation}>
+    <group
+      ref={scrollRef}
+      position={scrollPoses[0].position}
+      rotation={scrollPoses[0].rotation}
+      scale={scrollPoses[0].scale}
+    >
       <group ref={motionRef}>
         <group ref={idleRef}>
           <primitive object={model} />
