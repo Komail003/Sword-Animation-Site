@@ -1,6 +1,6 @@
 .katana-page {
   position: relative;
-  min-height: 300vh;
+  min-height: 700vh;
   overflow: clip;
   background:
     linear-gradient(rgba(3, 4, 7, 0.72), rgba(9, 9, 10, 0.8)),
@@ -102,11 +102,11 @@
   letter-spacing: 2px;
 }
 
-.katana-middle {
+.katana-right {
   justify-content: flex-end;
 }
 
-.katana-middle .katana-copy {
+.katana-right .katana-copy {
   max-width: 470px;
 }
 
@@ -126,10 +126,207 @@
   letter-spacing: 2px;
   pointer-events: auto;
   background: rgba(18, 18, 18, 0.18);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.25s ease, letter-spacing 0.25s ease;
 }
 
 .katana-button:hover {
   background: rgba(214, 193, 141, 0.12);
+  letter-spacing: 3px;
+}
+
+.katana-button:focus-visible,
+.katana-nav a:focus-visible {
+  outline: 1px solid #d6c18d;
+  outline-offset: 4px;
+}
+
+/* Navigation */
+
+.katana-links {
+  display: flex;
+  gap: 32px;
+}
+
+.katana-nav .katana-links a {
+  color: #9ca7ba;
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+
+.katana-nav .katana-links a:hover {
+  color: #d6c18d;
+}
+
+/* Scroll progress */
+
+.progress {
+  position: fixed;
+  right: 3%;
+  top: 50%;
+  z-index: 3;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #9ca7ba;
+}
+
+.progress span:first-child {
+  color: #d6c18d;
+}
+
+.progress-track {
+  width: 1px;
+  height: 120px;
+  background: rgba(246, 240, 228, 0.15);
+  overflow: hidden;
+}
+
+.progress-fill {
+  width: 100%;
+  height: 100%;
+  background: #d6c18d;
+  transform: scaleY(0);
+  transform-origin: top;
+}
+
+/* Anatomy */
+
+.anatomy-list,
+.forge-steps {
+  list-style: none;
+  margin: 36px 0 0;
+  padding: 0;
+  max-width: 440px;
+}
+
+.anatomy-list li,
+.forge-steps li {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 18px;
+  padding: 16px 0;
+  border-top: 1px solid rgba(214, 193, 141, 0.18);
+}
+
+.anatomy-name,
+.forge-steps li > span {
+  color: #d6c18d;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  padding-top: 2px;
+}
+
+.anatomy-list strong,
+.forge-steps strong {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.anatomy-list p,
+.forge-steps p {
+  margin: 0;
+  color: #b6afa1;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* Forge */
+
+.forge-steps li {
+  grid-template-columns: 40px 1fr;
+}
+
+.forge-steps strong {
+  letter-spacing: 3px;
+}
+
+/* Specifications */
+
+.katana-specs {
+  align-items: flex-end;
+  padding-bottom: 14vh;
+}
+
+.katana-specs .katana-copy {
+  max-width: 900px;
+}
+
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 40px 0 0;
+}
+
+.spec-grid div {
+  padding: 18px 28px 0 0;
+  border-top: 1px solid rgba(214, 193, 141, 0.3);
+}
+
+.spec-grid dt {
+  color: #9ca7ba;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.spec-grid dd {
+  margin: 0;
+  font-size: clamp(28px, 3.4vw, 46px);
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.spec-grid small {
+  margin-left: 6px;
+  color: #d6c18d;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+/* Slash effect */
+
+.slash {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.slash-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, #fff6e0, transparent 65%);
+  opacity: 0;
+}
+
+.slash-line {
+  position: absolute;
+  top: 50%;
+  left: -10%;
+  width: 120%;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 246, 224, 0.95) 45%,
+    #ffffff 55%,
+    transparent
+  );
+  box-shadow: 0 0 24px 4px rgba(214, 193, 141, 0.6);
+  transform: rotate(-24deg) scaleX(0);
 }
 
 @media (max-width: 700px) {
@@ -153,8 +350,34 @@
     letter-spacing: -2px;
   }
 
-  .katana-middle {
+  .katana-right {
     align-items: flex-end;
     padding-bottom: 16vh;
+  }
+
+  .katana-links,
+  .progress {
+    display: none;
+  }
+
+  .anatomy-list li {
+    grid-template-columns: 72px 1fr;
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .forge-steps li {
+    padding: 12px 0;
+  }
+
+  .spec-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 24px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .nav-tagline {
+    display: none;
   }
 }
